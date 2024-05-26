@@ -1,0 +1,32 @@
+
+
+CREATE TABLE permits (
+    id VARCHAR(255) PRIMARY KEY,
+    permit VARCHAR(255),
+    permit_type VARCHAR(255),
+    review_type VARCHAR(255),
+    application_start_date TIMESTAMP,
+    issue_date TIMESTAMP,
+    processing_time INT,
+    street_number VARCHAR(255),
+    street_direction VARCHAR(255),
+    street_name VARCHAR(255),
+    work_description VARCHAR(255),
+    building_fee_paid FLOAT,
+    zoning_fee_paid FLOAT,
+    other_fee_paid FLOAT,
+    subtotal_paid FLOAT,
+    building_fee_unpaid FLOAT,
+    zoning_fee_unpaid FLOAT,
+    other_fee_unpaid FLOAT,
+    subtotal_unpaid FLOAT,
+    building_fee_waived FLOAT,
+    building_fee_subtotal FLOAT,
+    zoning_fee_subtotal FLOAT,
+    other_fee_subtotal FLOAT,
+    zoning_fee_waived FLOAT,
+    other_fee_waived FLOAT,
+    subtotal_waived FLOAT,
+    total_fee FLOAT,
+    reported_cost FLOAT
+);
