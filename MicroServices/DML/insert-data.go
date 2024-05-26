@@ -26,22 +26,13 @@ func saveDataToPostgres(db *sql.DB, data []map[string]interface{}) error {
 		// 	return fmt.Errorf("failed to marshal location to JSON: %v", err)
 		// }
 
-		_, err := db.Exec(`INSERT INTO permits (id, permit, permit_type, review_type, application_start_date, issue_date, processing_time, street_number, street_direction, street_name, work_description, building_fee_paid, zoning_fee_paid, other_fee_paid, subtotal_paid, building_fee_unpaid, zoning_fee_unpaid, other_fee_unpaid, subtotal_unpaid, building_fee_waived, building_fee_subtotal, zoning_fee_subtotal, other_fee_subtotal, zoning_fee_waived, other_fee_waived, subtotal_waived, total_fee, reported_cost,
-			 contact_1_city, contact_1_name, contact_1_state, contact_1_type, contact_1_zipcode, latitude, longitude
+		_, err := db.Exec(`INSERT INTO permits (id, permit, permit_type, application_start_date, latitude, longitude
 			 , xcoordinate, ycoordinate) 
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24,
-			 $25, $26, $27, $28, $29, $30, $31, $32, $33, $34, $35, $36, $37)`,
-			item["id"], item["permit"], item["permit_type"], item["review_type"],
-			item["application_start_date"], item["issue_date"], item["processing_time"],
-			item["street_number"], item["street_direction"], item["street_name"],
-			item["work_description"], item["building_fee_paid"], item["zoning_fee_paid"],
-			item["other_fee_paid"], item["subtotal_paid"], item["building_fee_unpaid"],
-			item["zoning_fee_unpaid"], item["other_fee_unpaid"], item["subtotal_unpaid"],
-			item["building_fee_waived"], item["building_fee_subtotal"], item["zoning_fee_subtotal"],
-			item["other_fee_subtotal"], item["zoning_fee_waived"], item["other_fee_waived"],
-			item["subtotal_waived"], item["total_fee"], item["reported_cost"],
-			item["contact_1_city"], item["contact_1_name"], item["contact_1_state"],
-			item["contact_1_type"], item["contact_1_zipcode"], item["latitude"],
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+			item["id"], item["permit"], item["permit_type"],
+			item["application_start_date"],
+
+			item["latitude"],
 			item["longitude"], item["xcoordinate"], item["ycoordinate"])
 
 		if err != nil {

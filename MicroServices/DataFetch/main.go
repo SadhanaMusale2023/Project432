@@ -9,17 +9,18 @@ import (
 	"net/http"
 	"runtime"
 	"sync"
+	"time"
 )
 
 // Fetch data from an external HTTP endpoint
 // func fetchDataFromEndpoint(url string) ([]map[string]interface{}, error) {
 // 	var allResults []map[string]interface{}
-// 	page := 1
+// 	page := 0
 // 	limit := 50000
 // 	for {
 // 		// Construct the paginated URL
 // 		//https://data.cityofchicago.org/resource/ydr8-5enu.json?$offset=100&$limit=50000
-// 		paginatedURL := fmt.Sprintf("%s?$offset=%d&$limit=%d", url, page, limit)
+// 		paginatedURL := fmt.Sprintf("%s?$offset=%d&$limit=%d", url, page*limit, limit)
 // 		resp, err := http.Get(paginatedURL)
 // 		if err != nil {
 // 			return nil, fmt.Errorf("failed to fetch data: %v", err)
@@ -33,7 +34,7 @@ import (
 // 		}
 
 // 		// If no more results, break the loop
-// 		if len(results) == 0 {
+// 		if len(results) < limit {
 // 			break
 // 		}
 
@@ -45,28 +46,35 @@ import (
 // 	return allResults, nil
 // }
 
-func fetchDataFromEndpoint(url string, limit int) ([]map[string]interface{}, error) {
-
+func fetchDataFromEndpoint(url string) ([]map[string]interface{}, error) {
+	start := time.Now()
 	insertServiceURL := "http://localhost:8081/insert-data"
-
+	limit := 50000
 	var allResults []map[string]interface{}
 	page := 0
 	resultsCh := make(chan []map[string]interface{}, 10) // Buffered channel to store results
 	errorCh := make(chan error)
 	var wg sync.WaitGroup
-	maxGoroutines := 5
+	maxGoroutines := 15
+	columns := "id,permit_type,application_start_date,issue_date,processing_time,latitude,longitude,xcoordinate,ycoordinate"
 	semaphore := make(chan struct{}, maxGoroutines)
 
 	// Function to fetch a single page of data
 	fetchPage := func(page int) {
 		defer wg.Done()
 		offset := page * limit
-		paginatedURL := fmt.Sprintf("%s?$offset=%d&$limit=%d", url, offset, limit)
+		paginatedURL := fmt.Sprintf("%s?$offset=%d&$limit=%d&$select=%s", url, offset, limit, columns)
 		resp, err := http.Get(paginatedURL)
 		if err != nil {
 			errorCh <- fmt.Errorf("failed to fetch data: %v", err)
 			return
 		}
+		if resp.StatusCode != http.StatusOK {
+			bodyBytes, _ := ioutil.ReadAll(resp.Body)
+			errorCh <- fmt.Errorf("failed to fetch data: status code %d, body: %s", resp.StatusCode, string(bodyBytes))
+			return
+		}
+
 		defer resp.Body.Close()
 
 		var results []map[string]interface{}
@@ -75,7 +83,7 @@ func fetchDataFromEndpoint(url string, limit int) ([]map[string]interface{}, err
 			return
 		}
 
-		fmt.Printf("fetch %d", page)
+		fmt.Printf("fetch %d \n", page)
 
 		resultsCh <- results
 		<-semaphore
@@ -101,6 +109,7 @@ func fetchDataFromEndpoint(url string, limit int) ([]map[string]interface{}, err
 		select {
 		case results, ok := <-resultsCh:
 			if ok {
+				fmt.Printf("forwardDataToInsertService %d\n", page)
 				if err := forwardDataToInsertService(insertServiceURL, results); err != nil {
 					// http.Error(w, err.Error(), http.StatusInternalServerError)
 					return nil, err
@@ -133,6 +142,12 @@ func fetchDataFromEndpoint(url string, limit int) ([]map[string]interface{}, err
 		}
 	}
 
+	end := time.Now()
+	duration := end.Sub(start)
+
+	fmt.Printf("Data fetched and decoded successfully. Duration: %v\n", duration)
+
+	fmt.Print("return from fetch")
 	return allResults, nil
 }
 
@@ -159,8 +174,9 @@ func forwardDataToInsertService(url string, data []map[string]interface{}) error
 // HTTP handler function
 func handler(w http.ResponseWriter, r *http.Request) {
 	externalURL := "https://data.cityofchicago.org/resource/ydr8-5enu.json" // Replace with the actual URL
-
-	data, err := fetchDataFromEndpoint(externalURL, 50000)
+	//start := time.Now()
+	//fmt.Printf("fetch %d \n", page)
+	data, err := fetchDataFromEndpoint(externalURL)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -174,6 +190,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	w.Write(response)
+
 }
 
 func main() {
