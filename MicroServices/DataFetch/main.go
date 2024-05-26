@@ -109,7 +109,7 @@ func fetchDataFromEndpoint(url string) ([]map[string]interface{}, error) {
 		select {
 		case results, ok := <-resultsCh:
 			if ok {
-				fmt.Printf("forwardDataToInsertService %d\n", page)
+				fmt.Printf("forwardDataToInsertService %d \n", page)
 				if err := forwardDataToInsertService(insertServiceURL, results); err != nil {
 					// http.Error(w, err.Error(), http.StatusInternalServerError)
 					return nil, err

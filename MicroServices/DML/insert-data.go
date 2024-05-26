@@ -21,6 +21,8 @@ const (
 
 func saveDataToPostgres(db *sql.DB, data []map[string]interface{}) error {
 	for _, item := range data {
+
+		// TODO handle this
 		// locationJSON, err := json.Marshal(item["location"])
 		// if err != nil {
 		// 	return fmt.Errorf("failed to marshal location to JSON: %v", err)
@@ -28,10 +30,9 @@ func saveDataToPostgres(db *sql.DB, data []map[string]interface{}) error {
 
 		_, err := db.Exec(`INSERT INTO permits (id, permit, permit_type, application_start_date, latitude, longitude
 			 , xcoordinate, ycoordinate) 
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+		    VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
 			item["id"], item["permit"], item["permit_type"],
 			item["application_start_date"],
-
 			item["latitude"],
 			item["longitude"], item["xcoordinate"], item["ycoordinate"])
 
