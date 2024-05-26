@@ -7,23 +7,26 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
-	"runtime"
 	"sync"
 )
 
-// Fetch data from an external HTTP endpoint
+// fetch-data
 // func fetchDataFromEndpoint(url string) ([]map[string]interface{}, error) {
 // 	var allResults []map[string]interface{}
-// 	page := 1
+// 	page := 0
 // 	limit := 50000
 // 	for {
 // 		// Construct the paginated URL
 // 		//https://data.cityofchicago.org/resource/ydr8-5enu.json?$offset=100&$limit=50000
+
+// 		insertServiceURL := "http://localhost:8081/insert-data"
+
 // 		paginatedURL := fmt.Sprintf("%s?$offset=%d&$limit=%d", url, page, limit)
 // 		resp, err := http.Get(paginatedURL)
 // 		if err != nil {
 // 			return nil, fmt.Errorf("failed to fetch data: %v", err)
 // 		}
+// 		page++
 // 		defer resp.Body.Close()
 
 // 		// Decode the response body into a slice of maps
@@ -32,14 +35,21 @@ import (
 // 			return nil, fmt.Errorf("failed to decode response: %v", err)
 // 		}
 
+// 		if err := forwardDataToInsertService(insertServiceURL, results); err != nil {
+// 			// http.Error(w, err.Error(), http.StatusInternalServerError)
+// 			return nil, err
+// 		}
+
 // 		// If no more results, break the loop
 // 		if len(results) == 0 {
+// 			fmt.Print("loop break")
 // 			break
 // 		}
 
 // 		// Append results to the allResults slice
 // 		allResults = append(allResults, results...)
-// 		page++
+
+// 		fmt.Printf("%s?$offset=%d &$count =%d \n", url, page, len(allResults))
 // 	}
 
 // 	return allResults, nil
@@ -160,7 +170,7 @@ func forwardDataToInsertService(url string, data []map[string]interface{}) error
 func handler(w http.ResponseWriter, r *http.Request) {
 	externalURL := "https://data.cityofchicago.org/resource/ydr8-5enu.json" // Replace with the actual URL
 
-	data, err := fetchDataFromEndpoint(externalURL, 50000)
+	data, err := fetchDataFromEndpoint(externalURL)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -179,7 +189,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 func main() {
 	http.HandleFunc("/fetch-data", handler)
 
-	runtime.GOMAXPROCS(1) // Optional: Limit Go to use 1 core
+	// runtime.GOMAXPROCS(1) // Optional: Limit Go to use 1 core
 	port := "8080"
 	fmt.Printf("Server is listening on port %s...\n", port)
 	if err := http.ListenAndServe(":"+port, nil); err != nil {
