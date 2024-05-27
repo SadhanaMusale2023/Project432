@@ -139,11 +139,19 @@ func forwardDataToInsertService(url string, data []map[string]interface{}) error
 }
 
 // HTTP handler function
-func handler(w http.ResponseWriter, r *http.Request) {
+func buildingPermithandler(w http.ResponseWriter, r *http.Request) {
 	externalURL := "https://data.cityofchicago.org/resource/ydr8-5enu.json" // Replace with the actual URL
 	columns := "id,permit_type,application_start_date,issue_date,processing_time,latitude,longitude,xcoordinate,ycoordinate"
 	insertServiceURL := "http://localhost:8081/insert-building-permit-data"
 	fetch(w, r, externalURL, columns, 15, insertServiceURL)
+
+}
+
+func taxiTripsHandler(w http.ResponseWriter, r *http.Request) {
+	externalURL := "https://data.cityofchicago.org/resource/m6dm-c72p.json" // Replace with the actual URL
+	columns := "trip_id,trip_start_timestamp,trip_end_timestamp,pickup_community_area,dropoff_community_area,pickup_centroid_latitude,pickup_centroid_longitude,dropoff_centroid_latitude,dropoff_centroid_longitude"
+	insertServiceURL := "http://localhost:8081/insert-taxi-trips"
+	fetch(w, r, externalURL, columns, 25, insertServiceURL)
 
 }
 
@@ -166,7 +174,8 @@ func fetch(w http.ResponseWriter, r *http.Request, externalURL string, columns s
 }
 
 func main() {
-	http.HandleFunc("/fetch-building-permits", handler)
+	http.HandleFunc("/fetch-building-permits", buildingPermithandler)
+	http.HandleFunc("/fetch-taxi-trips", taxiTripsHandler)
 
 	runtime.GOMAXPROCS(1) // Optional: Limit Go to use 1 core
 	port := "8080"

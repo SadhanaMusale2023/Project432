@@ -44,6 +44,31 @@ func saveBuildingDataToPostgres(db *sql.DB, data []map[string]interface{}) error
 	return nil
 }
 
+func saveTaxiTripsToPostgres(db *sql.DB, data []map[string]interface{}) error {
+	for _, item := range data {
+
+		// TODO handle this
+		// locationJSON, err := json.Marshal(item["location"])
+		// if err != nil {
+		// 	return fmt.Errorf("failed to marshal location to JSON: %v", err)
+		// }
+
+		_, err := db.Exec(`INSERT INTO taxitrips (trip_id, trip_start_timestamp, trip_end_timestamp, pickup_community_area, 
+			   dropoff_community_area, pickup_centroid_latitude
+			 , pickup_centroid_longitude, dropoff_centroid_latitude, dropoff_centroid_longitude) 
+		    VALUES ($1, $2, $3, $4, $5, $6, $7, $8 , $9)`,
+			item["trip_id"], item["trip_start_timestamp"], item["trip_end_timestamp"],
+			item["pickup_community_area"],
+			item["dropoff_community_area"],
+			item["pickup_centroid_latitude"], item["pickup_centroid_longitude"], item["dropoff_centroid_latitude"], item["dropoff_centroid_longitude"])
+
+		if err != nil {
+			return fmt.Errorf("failed to insert data: %v", err)
+		}
+	}
+	return nil
+}
+
 // HTTP handler function
 func handler(db *sql.DB, w http.ResponseWriter, r *http.Request) {
 	var data []map[string]interface{}
@@ -54,6 +79,12 @@ func handler(db *sql.DB, w http.ResponseWriter, r *http.Request) {
 
 	if strings.Contains(r.URL.String(), "insert-building-permit-data") {
 		if err := saveBuildingDataToPostgres(db, data); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+	}
+	if strings.Contains(r.URL.String(), "insert-taxi-trips") {
+		if err := saveTaxiTripsToPostgres(db, data); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
@@ -76,6 +107,11 @@ func main() {
 	http.HandleFunc("/insert-building-permit-data", func(w http.ResponseWriter, r *http.Request) {
 		handler(db, w, r)
 	})
+
+	http.HandleFunc("/insert-taxi-trips", func(w http.ResponseWriter, r *http.Request) {
+		handler(db, w, r)
+	})
+
 	port := "8081"
 	fmt.Printf("Insert service is listening on port %s...\n", port)
 	if err := http.ListenAndServe(":"+port, nil); err != nil {
