@@ -155,6 +155,13 @@ func taxiTripsHandler(w http.ResponseWriter, r *http.Request) {
 
 }
 
+func healthStatisticsHandler(w http.ResponseWriter, r *http.Request) {
+	externalURL := "https://data.cityofchicago.org/resource/yhhz-zm2v.json" // Replace with the actual URL
+	columns := "zip_code,cases_cumulative,cases_weekly,week_number,week_start,week_end,case_rate_weekly"
+	insertServiceURL := "http://localhost:8081/insert-health-statistics"
+	fetch(w, r, externalURL, columns, 1, insertServiceURL)
+}
+
 func fetch(w http.ResponseWriter, r *http.Request, externalURL string, columns string, maxRountine int, insertServiceURL string) {
 	data, err := fetchDataFromEndpoint(externalURL, columns, maxRountine, insertServiceURL)
 	if err != nil {
@@ -176,6 +183,7 @@ func fetch(w http.ResponseWriter, r *http.Request, externalURL string, columns s
 func main() {
 	http.HandleFunc("/fetch-building-permits", buildingPermithandler)
 	http.HandleFunc("/fetch-taxi-trips", taxiTripsHandler)
+	http.HandleFunc("/fetch-health-statistics", healthStatisticsHandler)
 
 	runtime.GOMAXPROCS(1) // Optional: Limit Go to use 1 core
 	port := "8080"
