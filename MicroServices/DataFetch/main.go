@@ -12,51 +12,16 @@ import (
 	"time"
 )
 
-// Fetch data from an external HTTP endpoint
-// func fetchDataFromEndpoint(url string) ([]map[string]interface{}, error) {
-// 	var allResults []map[string]interface{}
-// 	page := 0
-// 	limit := 50000
-// 	for {
-// 		// Construct the paginated URL
-// 		//https://data.cityofchicago.org/resource/ydr8-5enu.json?$offset=100&$limit=50000
-// 		paginatedURL := fmt.Sprintf("%s?$offset=%d&$limit=%d", url, page*limit, limit)
-// 		resp, err := http.Get(paginatedURL)
-// 		if err != nil {
-// 			return nil, fmt.Errorf("failed to fetch data: %v", err)
-// 		}
-// 		defer resp.Body.Close()
-
-// 		// Decode the response body into a slice of maps
-// 		var results []map[string]interface{}
-// 		if err := json.NewDecoder(resp.Body).Decode(&results); err != nil {
-// 			return nil, fmt.Errorf("failed to decode response: %v", err)
-// 		}
-
-// 		// If no more results, break the loop
-// 		if len(results) < limit {
-// 			break
-// 		}
-
-// 		// Append results to the allResults slice
-// 		allResults = append(allResults, results...)
-// 		page++
-// 	}
-
-// 	return allResults, nil
-// }
-
-func fetchDataFromEndpoint(url string) ([]map[string]interface{}, error) {
+func fetchDataFromEndpoint(url string, columns string, maxGoroutines int, insertServiceURL string) ([]map[string]interface{}, error) {
 	start := time.Now()
-	insertServiceURL := "http://localhost:8081/insert-data"
+
 	limit := 50000
 	var allResults []map[string]interface{}
 	page := 0
 	resultsCh := make(chan []map[string]interface{}, 10) // Buffered channel to store results
 	errorCh := make(chan error)
 	var wg sync.WaitGroup
-	maxGoroutines := 15
-	columns := "id,permit_type,application_start_date,issue_date,processing_time,latitude,longitude,xcoordinate,ycoordinate"
+
 	semaphore := make(chan struct{}, maxGoroutines)
 
 	// Function to fetch a single page of data
@@ -109,19 +74,21 @@ func fetchDataFromEndpoint(url string) ([]map[string]interface{}, error) {
 		select {
 		case results, ok := <-resultsCh:
 			if ok {
+
 				fmt.Printf("forwardDataToInsertService %d \n", page)
 				if err := forwardDataToInsertService(insertServiceURL, results); err != nil {
 					// http.Error(w, err.Error(), http.StatusInternalServerError)
 					return nil, err
 				}
 
-				if len(results) < limit {
+				if len(results) < limit && len(results) > 0 {
 					// If the results are less than the limit, we can stop early
 					return nil, nil
 				}
 
 				// Fetch next page
 				wg.Add(1)
+
 				semaphore <- struct{}{}
 				go fetchPage(page)
 				page++
@@ -174,9 +141,14 @@ func forwardDataToInsertService(url string, data []map[string]interface{}) error
 // HTTP handler function
 func handler(w http.ResponseWriter, r *http.Request) {
 	externalURL := "https://data.cityofchicago.org/resource/ydr8-5enu.json" // Replace with the actual URL
-	//start := time.Now()
-	//fmt.Printf("fetch %d \n", page)
-	data, err := fetchDataFromEndpoint(externalURL)
+	columns := "id,permit_type,application_start_date,issue_date,processing_time,latitude,longitude,xcoordinate,ycoordinate"
+	insertServiceURL := "http://localhost:8081/insert-building-permit-data"
+	fetch(w, r, externalURL, columns, 15, insertServiceURL)
+
+}
+
+func fetch(w http.ResponseWriter, r *http.Request, externalURL string, columns string, maxRountine int, insertServiceURL string) {
+	data, err := fetchDataFromEndpoint(externalURL, columns, maxRountine, insertServiceURL)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -194,7 +166,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
-	http.HandleFunc("/fetch-data", handler)
+	http.HandleFunc("/fetch-building-permits", handler)
 
 	runtime.GOMAXPROCS(1) // Optional: Limit Go to use 1 core
 	port := "8080"

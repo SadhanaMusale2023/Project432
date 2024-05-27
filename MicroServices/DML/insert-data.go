@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"strings"
 
 	_ "github.com/lib/pq"
 )
@@ -19,7 +20,7 @@ const (
 	dbname   = "chicago"
 )
 
-func saveDataToPostgres(db *sql.DB, data []map[string]interface{}) error {
+func saveBuildingDataToPostgres(db *sql.DB, data []map[string]interface{}) error {
 	for _, item := range data {
 
 		// TODO handle this
@@ -51,9 +52,11 @@ func handler(db *sql.DB, w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := saveDataToPostgres(db, data); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+	if strings.Contains(r.URL.String(), "insert-building-permit-data") {
+		if err := saveBuildingDataToPostgres(db, data); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
 	}
 
 	w.WriteHeader(http.StatusOK)
@@ -70,7 +73,7 @@ func main() {
 	}
 	defer db.Close()
 
-	http.HandleFunc("/insert-data", func(w http.ResponseWriter, r *http.Request) {
+	http.HandleFunc("/insert-building-permit-data", func(w http.ResponseWriter, r *http.Request) {
 		handler(db, w, r)
 	})
 	port := "8081"
