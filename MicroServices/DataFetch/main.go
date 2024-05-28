@@ -162,6 +162,13 @@ func healthStatisticsHandler(w http.ResponseWriter, r *http.Request) {
 	fetch(w, r, externalURL, columns, 1, insertServiceURL)
 }
 
+func covid19ccvHandler(w http.ResponseWriter, r *http.Request) {
+	externalURL := "https://data.cityofchicago.org/resource/2ns9-phjk.json" // Replace with the actual URL
+	columns := "geography_type,community_area_or_zip,ccvi_score,ccvi_category"
+	insertServiceURL := "http://localhost:8081/insert-covid-cases"
+	fetch(w, r, externalURL, columns, 1, insertServiceURL)
+}
+
 func fetch(w http.ResponseWriter, r *http.Request, externalURL string, columns string, maxRountine int, insertServiceURL string) {
 	data, err := fetchDataFromEndpoint(externalURL, columns, maxRountine, insertServiceURL)
 	if err != nil {
@@ -184,8 +191,8 @@ func main() {
 	http.HandleFunc("/fetch-building-permits", buildingPermithandler)
 	http.HandleFunc("/fetch-taxi-trips", taxiTripsHandler)
 	http.HandleFunc("/fetch-health-statistics", healthStatisticsHandler)
-
-	runtime.GOMAXPROCS(1) // Optional: Limit Go to use 1 core
+	http.HandleFunc("/fetch-covid-cases", covid19ccvHandler)
+	runtime.GOMAXPROCS(2) // Optional: Limit Go to use 1 core
 	port := "8080"
 	fmt.Printf("Server is listening on port %s...\n", port)
 	if err := http.ListenAndServe(":"+port, nil); err != nil {

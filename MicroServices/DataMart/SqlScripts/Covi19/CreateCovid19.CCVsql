@@ -1,0 +1,7 @@
+CREATE TABLE COVID_Cases_Fact      (
+    geography_type VARCHAR(50),
+    community_area_or_zip VARCHAR(10),
+    ccvi_score FLOAT,
+    ccvi_category VARCHAR(10)
+    
+);

@@ -1,5 +1,5 @@
-CREATE TABLE taxitrips (
-    trip_id SERIAL PRIMARY KEY,
+CREATE TABLE Taxi_Trips_Fact    (
+    trip_id Text ,
     trip_start_timestamp TIMESTAMP,
     trip_end_timestamp TIMESTAMP,
     pickup_community_area INT,

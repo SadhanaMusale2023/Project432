@@ -29,7 +29,7 @@ func saveBuildingDataToPostgres(db *sql.DB, data []map[string]interface{}) error
 		// 	return fmt.Errorf("failed to marshal location to JSON: %v", err)
 		// }
 
-		_, err := db.Exec(`INSERT INTO permits (id, permit, permit_type, application_start_date, latitude, longitude
+		_, err := db.Exec(`INSERT INTO Building_Permits_Fact  (id, permit, permit_type, application_start_date, latitude, longitude
 			 , xcoordinate, ycoordinate) 
 		    VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
 			item["id"], item["permit"], item["permit_type"],
@@ -46,15 +46,15 @@ func saveBuildingDataToPostgres(db *sql.DB, data []map[string]interface{}) error
 
 func saveTaxiTripsToPostgres(db *sql.DB, data []map[string]interface{}) error {
 	for _, item := range data {
-
-		_, err := db.Exec(`INSERT INTO taxitrips (trip_id, trip_start_timestamp, trip_end_timestamp, pickup_community_area, 
-			   dropoff_community_area, pickup_centroid_latitude
-			 , pickup_centroid_longitude, dropoff_centroid_latitude, dropoff_centroid_longitude) 
-		    VALUES ($1, $2, $3, $4, $5, $6, $7, $8 , $9)`,
+		_, err := db.Exec(`INSERT INTO Taxi_Trips_Fact (trip_id, trip_start_timestamp, trip_end_timestamp, 
+                            pickup_community_area, dropoff_community_area, pickup_centroid_latitude,
+                            pickup_centroid_longitude, dropoff_centroid_latitude, dropoff_centroid_longitude) 
+                            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+                            ON CONFLICT (trip_id, trip_start_timestamp) DO NOTHING`,
 			item["trip_id"], item["trip_start_timestamp"], item["trip_end_timestamp"],
-			item["pickup_community_area"],
-			item["dropoff_community_area"],
-			item["pickup_centroid_latitude"], item["pickup_centroid_longitude"], item["dropoff_centroid_latitude"], item["dropoff_centroid_longitude"])
+			item["pickup_community_area"], item["dropoff_community_area"],
+			item["pickup_centroid_latitude"], item["pickup_centroid_longitude"],
+			item["dropoff_centroid_latitude"], item["dropoff_centroid_longitude"])
 
 		if err != nil {
 			return fmt.Errorf("failed to insert data: %v", err)
@@ -66,10 +66,25 @@ func saveTaxiTripsToPostgres(db *sql.DB, data []map[string]interface{}) error {
 func saveHealthStatisticsToPostgres(db *sql.DB, data []map[string]interface{}) error {
 	for _, item := range data {
 
-		_, err := db.Exec(`INSERT INTO public_health (zip_code, cases_cumulative, cases_weekly, week_number, week_start, week_end, case_rate_weekly) 
+		_, err := db.Exec(`INSERT INTO public_health_statistics (zip_code, cases_cumulative, cases_weekly, week_number, week_start, week_end, case_rate_weekly) 
 			VALUES ($1, $2, $3, $4, $5, $6, $7)`,
 			item["zip_code"], item["cases_cumulative"], item["cases_weekly"],
 			item["week_number"], item["week_start"], item["week_end"], item["case_rate_weekly"])
+
+		if err != nil {
+			return fmt.Errorf("failed to insert data: %v", err)
+		}
+	}
+	return nil
+}
+
+func saveCovid19ToPostgres(db *sql.DB, data []map[string]interface{}) error {
+	for _, item := range data {
+		_, err := db.Exec(`INSERT INTO COVID_Cases_Fact (geography_type, community_area_or_zip, ccvi_score, ccvi_category) 
+                           VALUES ($1, $2, $3, $4)
+                           `,
+			item["geography_type"], item["community_area_or_zip"], item["ccvi_score"],
+			item["ccvi_category"])
 
 		if err != nil {
 			return fmt.Errorf("failed to insert data: %v", err)
@@ -104,6 +119,12 @@ func handler(db *sql.DB, w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
+	if strings.Contains(r.URL.String(), "insert-covid-cases") {
+		if err := saveCovid19ToPostgres(db, data); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+	}
 
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte("Data inserted successfully"))
@@ -128,6 +149,10 @@ func main() {
 	})
 
 	http.HandleFunc("/insert-health-statistics", func(w http.ResponseWriter, r *http.Request) {
+		handler(db, w, r)
+	})
+
+	http.HandleFunc("/insert-covid-cases", func(w http.ResponseWriter, r *http.Request) {
 		handler(db, w, r)
 	})
 
