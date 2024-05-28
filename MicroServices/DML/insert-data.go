@@ -31,7 +31,7 @@ func saveBuildingDataToPostgres(db *sql.DB, data []map[string]interface{}) error
 
 		_, err := db.Exec(`INSERT INTO Building_Permits_Fact  (id, permit, permit_type, application_start_date, latitude, longitude
 			 , xcoordinate, ycoordinate) 
-		    VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+		    VALUES ($1, $2, $3, $4, $5, $6, $7, $8)  ON CONFLICT (id) DO NOTHING`,
 			item["id"], item["permit"], item["permit_type"],
 			item["application_start_date"],
 			item["latitude"],
