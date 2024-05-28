@@ -1,4 +1,5 @@
-CREATE TABLE public_health (
+
+CREATE TABLE public_health_statistics (
     zip_code varchar(10),
     cases_cumulative INT,
     cases_weekly INT,

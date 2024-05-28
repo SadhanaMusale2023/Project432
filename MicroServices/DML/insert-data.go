@@ -50,7 +50,7 @@ func saveTaxiTripsToPostgres(db *sql.DB, data []map[string]interface{}) error {
                             pickup_community_area, dropoff_community_area, pickup_centroid_latitude,
                             pickup_centroid_longitude, dropoff_centroid_latitude, dropoff_centroid_longitude) 
                             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-                            ON CONFLICT (trip_id, trip_start_timestamp) DO NOTHING`,
+                            ON CONFLICT (trip_id) DO NOTHING`,
 			item["trip_id"], item["trip_start_timestamp"], item["trip_end_timestamp"],
 			item["pickup_community_area"], item["dropoff_community_area"],
 			item["pickup_centroid_latitude"], item["pickup_centroid_longitude"],
