@@ -1,7 +1,17 @@
-CREATE TABLE COVID_Cases_Fact      (
+CREATE TABLE COVID_Cases_CCV     (
     geography_type VARCHAR(50),
     community_area_or_zip VARCHAR(10),
     ccvi_score FLOAT,
     ccvi_category VARCHAR(10)
     
+);
+
+CREATE TABLE COVID_Cases_Fact (
+    zip_code varchar(10),
+    cases_cumulative INT,
+    cases_weekly INT,
+    week_number INT,
+    week_start DATE,
+    week_end DATE,
+    case_rate_weekly NUMERIC(10, 2)
 );

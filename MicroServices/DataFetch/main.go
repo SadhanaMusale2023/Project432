@@ -156,16 +156,23 @@ func taxiTripsHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func healthStatisticsHandler(w http.ResponseWriter, r *http.Request) {
+	externalURL := "https://data.cityofchicago.org/resource/iqnk-2tcu.json" // Replace with the actual URL
+	columns := "community_area,below_poverty_level,per_capita_income,unemployment"
+	insertServiceURL := "http://localhost:8081/insert-health-statistics"
+	fetch(w, r, externalURL, columns, 1, insertServiceURL)
+}
+
+func covidcasesHandler(w http.ResponseWriter, r *http.Request) {
 	externalURL := "https://data.cityofchicago.org/resource/yhhz-zm2v.json" // Replace with the actual URL
 	columns := "zip_code,cases_cumulative,cases_weekly,week_number,week_start,week_end,case_rate_weekly"
-	insertServiceURL := "http://localhost:8081/insert-health-statistics"
+	insertServiceURL := "http://localhost:8081/insert-covid-cases"
 	fetch(w, r, externalURL, columns, 1, insertServiceURL)
 }
 
 func covid19ccvHandler(w http.ResponseWriter, r *http.Request) {
 	externalURL := "https://data.cityofchicago.org/resource/2ns9-phjk.json" // Replace with the actual URL
 	columns := "geography_type,community_area_or_zip,ccvi_score,ccvi_category"
-	insertServiceURL := "http://localhost:8081/insert-covid-cases"
+	insertServiceURL := "http://localhost:8081/insert-covid-ccv"
 	fetch(w, r, externalURL, columns, 1, insertServiceURL)
 }
 
@@ -191,7 +198,8 @@ func main() {
 	http.HandleFunc("/fetch-building-permits", buildingPermithandler)
 	http.HandleFunc("/fetch-taxi-trips", taxiTripsHandler)
 	http.HandleFunc("/fetch-health-statistics", healthStatisticsHandler)
-	http.HandleFunc("/fetch-covid-cases", covid19ccvHandler)
+	http.HandleFunc("/fetch-covid-cases", covidcasesHandler)
+	http.HandleFunc("/fetch-covid-ccv", covid19ccvHandler)
 	runtime.GOMAXPROCS(2) // Optional: Limit Go to use 1 core
 	port := "8080"
 	fmt.Printf("Server is listening on port %s...\n", port)

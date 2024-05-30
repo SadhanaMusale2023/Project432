@@ -65,11 +65,24 @@ func saveTaxiTripsToPostgres(db *sql.DB, data []map[string]interface{}) error {
 
 func saveHealthStatisticsToPostgres(db *sql.DB, data []map[string]interface{}) error {
 	for _, item := range data {
+		_, err := db.Exec(`INSERT INTO public_health_statistics (community_area, below_poverty_level, per_capita_income, unemployment) 
+                           VALUES ($1, $2, $3, $4)`,
+			item["community_area"], item["below_poverty_level"], item["per_capita_income"], item["unemployment"])
 
-		_, err := db.Exec(`INSERT INTO public_health_statistics (zip_code, cases_cumulative, cases_weekly, week_number, week_start, week_end, case_rate_weekly) 
-			VALUES ($1, $2, $3, $4, $5, $6, $7)`,
-			item["zip_code"], item["cases_cumulative"], item["cases_weekly"],
-			item["week_number"], item["week_start"], item["week_end"], item["case_rate_weekly"])
+		if err != nil {
+			return fmt.Errorf("failed to insert data: %v", err)
+		}
+	}
+	return nil
+}
+
+func saveCovidCCVToPostgres(db *sql.DB, data []map[string]interface{}) error {
+	for _, item := range data {
+		_, err := db.Exec(`INSERT INTO COVID_Cases_CCV (geography_type, community_area_or_zip, ccvi_score, ccvi_category) 
+                           VALUES ($1, $2, $3, $4)
+                           `,
+			item["geography_type"], item["community_area_or_zip"], item["ccvi_score"],
+			item["ccvi_category"])
 
 		if err != nil {
 			return fmt.Errorf("failed to insert data: %v", err)
@@ -80,11 +93,11 @@ func saveHealthStatisticsToPostgres(db *sql.DB, data []map[string]interface{}) e
 
 func saveCovid19ToPostgres(db *sql.DB, data []map[string]interface{}) error {
 	for _, item := range data {
-		_, err := db.Exec(`INSERT INTO COVID_Cases_Fact (geography_type, community_area_or_zip, ccvi_score, ccvi_category) 
-                           VALUES ($1, $2, $3, $4)
-                           `,
-			item["geography_type"], item["community_area_or_zip"], item["ccvi_score"],
-			item["ccvi_category"])
+
+		_, err := db.Exec(`INSERT INTO COVID_Cases_Fact (zip_code, cases_cumulative, cases_weekly, week_number, week_start, week_end, case_rate_weekly) 
+			VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+			item["zip_code"], item["cases_cumulative"], item["cases_weekly"],
+			item["week_number"], item["week_start"], item["week_end"], item["case_rate_weekly"])
 
 		if err != nil {
 			return fmt.Errorf("failed to insert data: %v", err)
@@ -119,6 +132,14 @@ func handler(db *sql.DB, w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
+
+	if strings.Contains(r.URL.String(), "insert-covid-ccv") {
+		if err := saveCovidCCVToPostgres(db, data); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+	}
+
 	if strings.Contains(r.URL.String(), "insert-covid-cases") {
 		if err := saveCovid19ToPostgres(db, data); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -153,6 +174,10 @@ func main() {
 	})
 
 	http.HandleFunc("/insert-covid-cases", func(w http.ResponseWriter, r *http.Request) {
+		handler(db, w, r)
+	})
+
+	http.HandleFunc("/insert-covid-ccv", func(w http.ResponseWriter, r *http.Request) {
 		handler(db, w, r)
 	})
 

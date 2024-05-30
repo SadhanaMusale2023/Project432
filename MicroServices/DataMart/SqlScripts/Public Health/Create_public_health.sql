@@ -1,10 +1,7 @@
 
 CREATE TABLE public_health_statistics (
-    zip_code varchar(10),
-    cases_cumulative INT,
-    cases_weekly INT,
-    week_number INT,
-    week_start DATE,
-    week_end DATE,
-    case_rate_weekly NUMERIC(10, 2)
+    community_area INT PRIMARY KEY,
+    below_poverty_level NUMERIC(5, 2),
+    per_capita_income INT,
+    unemployment NUMERIC(5, 2)
 );
